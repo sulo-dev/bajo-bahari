@@ -5,11 +5,20 @@
   --foreground: #171717;
 }
 
+/* Biarkan font dan background bawaan Next.js di blok inline */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+}
+
+/* Tambahkan warna kustom Bajo di blok @theme standar */
+@theme {
+  --color-bajo-light: #AACCD6;
+  --color-bajo-primary: #4382DF;
+  --color-bajo-secondary: #4647AE;
+  --color-bajo-dark: #112E81;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -23,4 +32,28 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Animasi Kustom untuk Hero Section */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.8s ease-out forwards;
+}
+
+.delay-100 {
+  animation-delay: 100ms;
+}
+
+.delay-200 {
+  animation-delay: 200ms;
 }
