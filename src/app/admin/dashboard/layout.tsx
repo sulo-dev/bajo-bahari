@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react"; // 1. Pastikan useEffect diimport
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
@@ -9,18 +9,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname();
   const router = useRouter(); 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isCheckingSession, setIsCheckingSession] = useState(true); // 2. State untuk mengunci tampilan selama pengecekan
+  const [isCheckingSession, setIsCheckingSession] = useState(true);
 
-  // 3. PROTEKSI RUTE: Periksa sesi sebelum merender isi dashboard
+  // PROTEKSI RUTE
   useEffect(() => {
     const checkAdminSession = async () => {
       const { data } = await supabase.auth.getSession();
       
       if (!data.session) {
-        // Jika tidak ada sesi aktif (belum login), tendang paksa ke halaman login
-        router.push("/admin");
+        router.push("/admin/login");
       } else {
-        // Jika sesi terverifikasi ada, buka kunci loading dan tampilkan dashboard
         setIsCheckingSession(false);
       }
     };
@@ -79,7 +77,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     },
   ];
 
-  // 4. JIKA SEDANG MEMERIKSA SESI, TAMPILKAN LAYAR LOADING (Mencegah Kebocoran Komponen)
+  // JIKA SEDANG MEMERIKSA SESI, TAMPILKAN LAYAR LOADING
   if (isCheckingSession) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#f8fafc]">
@@ -91,15 +89,22 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     );
   }
 
-  // 5. JIKA SESI ADA, BARU RENDER HALAMAN UTAMA DASHBOARD
+  // JIKA SESI ADA, BARU RENDER HALAMAN UTAMA DASHBOARD
   return (
     <div className="flex h-screen bg-[#f8fafc] text-gray-800 overflow-hidden font-sans">
       {/* Overlay Gelap untuk Mobile */}
-      {isSidebarOpen && <div className="fixed inset-0 bg-gray-900/60 z-40 lg:hidden backdrop-blur-sm transition-opacity" onClick={() => setIsSidebarOpen(false)}></div>}
+      {isSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-gray-900/60 z-40 lg:hidden backdrop-blur-sm transition-opacity" 
+          onClick={() => setIsSidebarOpen(false)}
+        ></div>
+      )}
 
       {/* ================= SIDEBAR ================= */}
-      <aside className="fixed inset-y-0 left-0 z-50 w-[280px] bg-bajo-dark text-white flex flex-col shadow-2xl transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0">
-        {/* ... Konten Sidebar Tetap Sama ... */}
+      {/* PERBAIKAN: className menggunakan backtick (`) agar variabel isSidebarOpen bisa dibaca */}
+      <aside 
+        className={`fixed inset-y-0 left-0 z-50 w-[280px] bg-bajo-dark text-white flex flex-col shadow-2xl transform transition-transform duration-300 ease-in-out ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"} lg:relative lg:translate-x-0`}
+      >
         <div className="flex-grow py-6 px-4 overflow-y-auto relative z-10 scrollbar-hide">
           <div className="space-y-8">
             {menuGroups.map((group, groupIndex) => (
