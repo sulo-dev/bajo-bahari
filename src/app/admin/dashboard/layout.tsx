@@ -29,7 +29,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const handleLogout = async () => {
     const { error } = await supabase.auth.signOut();
     if (!error) {
-      router.push("/admin/login");
+      router.push("/admin");
       router.refresh();
     } else {
       console.error("Gagal logout:", error.message);
