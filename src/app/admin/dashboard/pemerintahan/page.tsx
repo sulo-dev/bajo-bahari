@@ -204,7 +204,7 @@ export default function PemerintahanPage() {
     { nama: "Kepala Desa", urutan: 1 }, { nama: "Sekretaris Desa", urutan: 2 }, { nama: "Ketua BPD", urutan: 3 },
     { nama: "Kaur Umum & Perencanaan", urutan: 4 }, { nama: "Kaur Keuangan", urutan: 4 },
     { nama: "Kasi Pemerintahan", urutan: 5 }, { nama: "Kasi Kesejahteraan", urutan: 5 },
-    { nama: "Kepala Dusun 1", urutan: 6 }, { nama: "Kepala Dusun 2", urutan: 6 }, { nama: "Kepala Dusun 3", urutan: 6 },
+    { nama: "Kepala Dusun Wajo Berese", urutan: 6 }, { nama: "Kepala Dusun Wajo Bantilah", urutan: 6 }, { nama: "Kepala Dusun 3", urutan: 6 },
   ];
 
   if (isLoading) {
