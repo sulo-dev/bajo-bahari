@@ -122,7 +122,7 @@ export default function AspirasiPage() {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Kategori Aspirasi / Laporan</label>
                   <select className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-bajo-primary focus:border-bajo-primary outline-none transition-colors bg-white">
-                    <option value="" disabled selected>-- Pilih Kategori --</option>
+                    <option defaultValue="#" disabled>-- Pilih Kategori --</option>
                     <option value="infrastruktur">Infrastruktur & Pembangunan</option>
                     <option value="pelayanan">Pelayanan Publik (Surat/Adminduk)</option>
                     <option value="kebersihan">Kebersihan & Lingkungan</option>

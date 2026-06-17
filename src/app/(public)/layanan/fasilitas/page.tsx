@@ -4,7 +4,7 @@ export const metadata = {
 };
 
 export default function FasilitasPage() {
-  // Data statis fasilitas desa
+  // Data statis fasilitas desa dengan penyesuaian warna yang aman (Tailwind standar + Custom)
   const fasilitasPublik = [
     {
       id: 1,
@@ -12,7 +12,8 @@ export default function FasilitasPage() {
       kategori: "Pemerintahan",
       deskripsi: "Pusat kegiatan warga, musyawarah desa, dan acara seremonial. Dilengkapi dengan sound system dan ruang rapat.",
       icon: "🏛️",
-      warna: "bg-bajo-primary",
+      warnaBg: "bg-blue-100",
+      warnaTeks: "text-blue-600",
     },
     {
       id: 2,
@@ -20,114 +21,106 @@ export default function FasilitasPage() {
       kategori: "Kesehatan",
       deskripsi: "Fasilitas kesehatan tingkat pertama untuk pelayanan ibu, anak, dan pertolongan pertama bagi warga desa.",
       icon: "🏥",
-      warna: "bg-green-500",
+      warnaBg: "bg-green-100",
+      warnaTeks: "text-green-600",
     },
     {
       id: 3,
       nama: "Masjid Raya Desa",
       kategori: "Tempat Ibadah",
-      deskripsi: "Pusat ibadah dan kegiatan keagamaan masyarakat. Mampu menampung hingga 300 jamaah dengan fasilitas tempat wudhu bersih.",
+      deskripsi: "Pusat ibadah dan kegiatan keagamaan masyarakat. Mampu menampung hingga 300 jamaah dengan tempat wudhu bersih.",
       icon: "🕌",
-      warna: "bg-bajo-dark",
+      warnaBg: "bg-indigo-100",
+      warnaTeks: "text-indigo-600",
     },
     {
       id: 4,
       nama: "Dermaga Pesisir",
-      kategori: "Transportasi & Ekonomi",
+      kategori: "Transportasi Laut",
       deskripsi: "Tempat bersandar perahu nelayan dan bongkar muat hasil tangkapan laut warga Desa Bajo Bahari.",
       icon: "⚓",
-      warna: "bg-bajo-secondary",
+      warnaBg: "bg-cyan-100",
+      warnaTeks: "text-cyan-600",
     },
     {
       id: 5,
-      nama: "Lapangan Olahraga Terpadu",
+      nama: "Lapangan Olahraga",
       kategori: "Sosial & Olahraga",
-      deskripsi: "Area terbuka untuk kegiatan olahraga seperti voli dan takraw, serta digunakan untuk perayaan lomba 17 Agustus.",
+      deskripsi: "Area terbuka untuk kegiatan olahraga seperti voli dan takraw, serta digunakan untuk perayaan lomba.",
       icon: "⚽",
-      warna: "bg-orange-500",
+      warnaBg: "bg-orange-100",
+      warnaTeks: "text-orange-600",
     },
     {
       id: 6,
       nama: "Pasar Desa / TPI Mini",
       kategori: "Ekonomi",
-      deskripsi: "Tempat transaksi jual beli kebutuhan pokok dan pusat pelelangan ikan skala kecil hasil tangkapan nelayan lokal.",
+      deskripsi: "Tempat transaksi jual beli kebutuhan pokok dan pusat pelelangan ikan skala kecil hasil tangkapan lokal.",
       icon: "🏪",
-      warna: "bg-bajo-light",
+      warnaBg: "bg-teal-100",
+      warnaTeks: "text-teal-600",
     },
   ];
 
   return (
-    <div className="bg-white min-h-screen pb-20">
-      {/* Header Halaman */}
-      <div className="bg-bajo-dark py-16 text-center text-white relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-full overflow-hidden opacity-20 pointer-events-none z-0">
-          <div className="absolute top-0 left-12 w-80 h-80 rounded-full bg-bajo-primary blur-3xl"></div>
-          <div className="absolute -bottom-10 right-1/4 w-72 h-72 rounded-full bg-bajo-secondary blur-3xl"></div>
+    <div className="bg-gray-50 min-h-screen pb-20">
+      {/* Header Halaman - Dibuat lebih ringkas dan aman */}
+      <div className="bg-bajo-dark py-16 text-center text-white px-4">
+        <div className="inline-block px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-sm text-white font-semibold uppercase tracking-widest text-xs mb-4">
+          Layanan Publik
         </div>
-
-        <div className="relative z-10 px-4">
-          <div className="inline-block px-4 py-1 rounded-full bg-bajo-light/20 text-bajo-light font-bold uppercase tracking-widest text-xs mb-4 border border-bajo-light/30">
-            Layanan Publik
-          </div>
-          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight">Fasilitas Publik</h1>
-          <p className="mt-4 text-lg text-bajo-light max-w-2xl mx-auto">
-            Berbagai infrastruktur dan fasilitas yang dikelola desa untuk menunjang kesejahteraan warga.
-          </p>
-        </div>
+        <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-4">Fasilitas Publik</h1>
+        <p className="text-lg text-gray-300 max-w-2xl mx-auto">
+          Infrastruktur dan fasilitas yang dikelola desa untuk menunjang kesejahteraan serta kegiatan warga.
+        </p>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 -mt-8 relative z-10">
         
-        {/* Grid Galeri Fasilitas */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        {/* Grid Card yang Stabil */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {fasilitasPublik.map((item) => (
-            <div key={item.id} className="bg-white rounded-3xl border border-gray-100 shadow-sm hover:shadow-xl transform hover:-translate-y-2 transition-all duration-300 overflow-hidden group">
-              
-              {/* Area Visual (Placeholder Gambar) */}
-              <div className="h-48 bg-gray-50 relative flex items-center justify-center overflow-hidden">
-                {/* Latar Belakang Warna Dekoratif */}
-                <div className={`absolute inset-0 opacity-10 ${item.warna} group-hover:opacity-20 transition-opacity`}></div>
-                
-                {/* Ikon Besar */}
-                <span className="text-7xl transform group-hover:scale-110 transition-transform duration-300 relative z-10 drop-shadow-md">
+            <div 
+              key={item.id} 
+              className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-300 flex flex-col h-full"
+            >
+              {/* Header Card: Ikon dan Kategori */}
+              <div className="flex justify-between items-start mb-6">
+                <div className={`w-14 h-14 rounded-xl flex items-center justify-center text-3xl ${item.warnaBg} ${item.warnaTeks}`}>
                   {item.icon}
-                </span>
-                
-                {/* Badge Kategori */}
-                <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold text-gray-700 shadow-sm z-20">
-                  {item.kategori}
                 </div>
+                <span className="bg-gray-100 text-gray-600 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider">
+                  {item.kategori}
+                </span>
               </div>
 
-              {/* Deskripsi Teks */}
-              <div className="p-6">
-                <h3 className="text-xl font-bold text-gray-900 mb-3">{item.nama}</h3>
-                <p className="text-gray-600 text-sm leading-relaxed">
-                  {item.deskripsi}
-                </p>
-              </div>
+              {/* Isi Card */}
+              <h3 className="text-xl font-bold text-gray-900 mb-3">{item.nama}</h3>
+              <p className="text-gray-600 text-sm leading-relaxed flex-grow">
+                {item.deskripsi}
+              </p>
             </div>
           ))}
         </div>
 
-        {/* Banner Informasi Peminjaman Fasilitas */}
-        <div className="mt-16 bg-bajo-light/10 border border-bajo-light/30 rounded-3xl p-8 md:p-10 flex flex-col md:flex-row items-center justify-between gap-8">
-          <div className="flex-shrink-0 w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-md">
-            <svg className="w-10 h-10 text-bajo-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
+        {/* Banner Peminjaman - Dibuat jadi bentuk Box rapi */}
+        <div className="mt-12 bg-white border border-bajo-primary/20 rounded-2xl p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm">
+          <div className="flex items-center gap-5">
+            <div className="hidden md:flex w-16 h-16 bg-bajo-primary/10 rounded-full items-center justify-center flex-shrink-0">
+              <svg className="w-8 h-8 text-bajo-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div className="text-center md:text-left">
+              <h3 className="text-lg font-bold text-gray-900 mb-1">Peminjaman Fasilitas</h3>
+              <p className="text-sm text-gray-600 max-w-xl">
+                Warga dapat mengajukan peminjaman fasilitas (seperti Balai Desa) untuk kegiatan sosial. Hubungi admin untuk informasi persyaratan lebih lanjut.
+              </p>
+            </div>
           </div>
-          <div className="flex-grow text-center md:text-left">
-            <h3 className="text-2xl font-bold text-bajo-dark mb-2">Ingin Meminjam Fasilitas Desa?</h3>
-            <p className="text-gray-600">
-              Warga dapat mengajukan peminjaman Balai Desa atau fasilitas lainnya untuk kegiatan sosial, pernikahan, maupun olahraga. Syarat dan ketentuan berlaku sesuai peraturan desa.
-            </p>
-          </div>
-          <div className="flex-shrink-0 w-full md:w-auto">
-            <button className="w-full bg-bajo-primary hover:bg-bajo-dark text-white font-bold py-3 px-6 rounded-xl transition-colors shadow-md">
-              Hubungi Admin
-            </button>
-          </div>
+          <button className="w-full md:w-auto px-6 py-3 bg-bajo-primary hover:bg-bajo-dark text-white text-sm font-bold rounded-xl transition-colors whitespace-nowrap">
+            Hubungi Admin
+          </button>
         </div>
 
       </div>
