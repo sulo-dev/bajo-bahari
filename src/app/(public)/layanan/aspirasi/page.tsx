@@ -1,9 +1,111 @@
-export const metadata = {
-  title: "Layanan Aspirasi - Desa Bajo Bahari",
-  description: "Sampaikan saran, kritik, dan aspirasi Anda untuk kemajuan Desa Bajo Bahari.",
-};
+"use client";
+
+import { useState } from "react";
+import { supabase } from "@/lib/supabase";
 
 export default function AspirasiPage() {
+  // State untuk form aspirasi
+  const [formData, setFormData] = useState({
+    nama: "",
+    nik: "",
+    is_anonim: false,
+    kategori: "infrastruktur",
+    pesan: ""
+  });
+
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string>("");
+  
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [notif, setNotif] = useState({ type: "", message: "" });
+
+  // Handler Input Text & Checkbox
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value, type } = e.target;
+    if (type === "checkbox") {
+      const checked = (e.target as HTMLInputElement).checked;
+      setFormData(prev => ({ ...prev, [name]: checked }));
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
+  };
+
+  // Handler Pemilihan File Gambar
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    const file = e.target.files[0];
+    
+    // Validasi ukuran (Maksimal 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      setNotif({ type: "error", message: "Ukuran file terlalu besar. Maksimal 2MB." });
+      return;
+    }
+
+    setImageFile(file);
+    setPreviewUrl(URL.createObjectURL(file));
+    setNotif({ type: "", message: "" });
+  };
+
+  // Eksekusi Pengiriman ke Supabase
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setNotif({ type: "", message: "" });
+
+    try {
+      let finalFotoUrl = null;
+
+      // 1. Upload Foto Bukti jika ada
+      if (imageFile) {
+        const fileExt = imageFile.name.split(".").pop();
+        const fileName = `aspirasi-${Date.now()}.${fileExt}`;
+        const filePath = `aspirasi/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from("media-desa")
+          .upload(filePath, imageFile);
+
+        if (uploadError) throw uploadError;
+
+        const { data: urlData } = supabase.storage
+          .from("media-desa")
+          .getPublicUrl(filePath);
+
+        finalFotoUrl = urlData.publicUrl;
+      }
+
+      // 2. Simpan Data Teks ke tabel `aspirasi`
+      const payload = {
+        nama_pengirim: formData.is_anonim ? "Anonim" : formData.nama,
+        nik: formData.is_anonim ? "Dirahasiakan" : formData.nik,
+        kategori: formData.kategori,
+        pesan: formData.pesan,
+        foto_bukti_url: finalFotoUrl,
+        is_anonim: formData.is_anonim,
+        status: "Menunggu" // Status default
+      };
+
+      const { error } = await supabase.from("aspirasi").insert([payload]);
+      if (error) throw error;
+
+      // Jika Berhasil
+      setNotif({ type: "success", message: "Aspirasi Anda berhasil dikirim dan akan segera ditinjau oleh Pemerintah Desa." });
+      
+      // Reset Form
+      setFormData({ nama: "", nik: "", is_anonim: false, kategori: "infrastruktur", pesan: "" });
+      setImageFile(null);
+      setPreviewUrl("");
+      
+      // Hilangkan notifikasi sukses setelah 5 detik
+      setTimeout(() => setNotif({ type: "", message: "" }), 5000);
+
+    } catch (error) {
+      setNotif({ type: "error", message: "Gagal mengirim aspirasi. Silakan periksa koneksi Anda dan coba lagi." });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className="bg-white min-h-screen pb-20">
       {/* Header Halaman */}
@@ -27,7 +129,7 @@ export default function AspirasiPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-start">
           
-          {/* Kolom Kiri: Aturan & Info (Porsi 5 kolom di layar besar) */}
+          {/* Kolom Kiri: Aturan & Info */}
           <div className="lg:col-span-5 space-y-8">
             <div>
               <h2 className="text-3xl font-bold text-gray-900 mb-4">Mari Bersama Membangun Desa</h2>
@@ -50,7 +152,7 @@ export default function AspirasiPage() {
                 </li>
                 <li className="flex items-start gap-3">
                   <div className="mt-1 w-6 h-6 rounded-full bg-white flex items-center justify-center flex-shrink-0 text-bajo-primary font-bold text-xs shadow-sm">2</div>
-                  <p className="text-sm text-gray-700">Sertakan detail lokasi atau nama program jika menyampaikan keluhan infrastruktur.</p>
+                  <p className="text-sm text-gray-700">Sertakan foto bukti lokasi atau kejadian jika menyampaikan keluhan infrastruktur.</p>
                 </li>
                 <li className="flex items-start gap-3">
                   <div className="mt-1 w-6 h-6 rounded-full bg-white flex items-center justify-center flex-shrink-0 text-bajo-primary font-bold text-xs shadow-sm">3</div>
@@ -58,114 +160,145 @@ export default function AspirasiPage() {
                 </li>
                 <li className="flex items-start gap-3">
                   <div className="mt-1 w-6 h-6 rounded-full bg-white flex items-center justify-center flex-shrink-0 text-bajo-primary font-bold text-xs shadow-sm">4</div>
-                  <p className="text-sm text-gray-700">Anda dapat menyembunyikan nama Anda dari publikasi jika merasa khawatir (Pilih opsi Anonim).</p>
+                  <p className="text-sm text-gray-700">Centang kotak &quot;Sembunyikan identitas saya&quot; jika ingin mengirim secara Anonim.</p>
                 </li>
               </ul>
             </div>
-
-            {/* Statistik Mini (Opsional) */}
-            <div className="flex items-center gap-6 p-6 bg-white border border-gray-100 rounded-2xl shadow-sm">
-              <div className="w-12 h-12 bg-green-100 text-green-600 rounded-xl flex items-center justify-center">
-                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              <div>
-                <h4 className="font-bold text-gray-900 text-xl">100%</h4>
-                <p className="text-sm text-gray-500">Aspirasi dibaca oleh Kepala Desa</p>
-              </div>
-            </div>
           </div>
 
-          {/* Kolom Kanan: Form Aspirasi (Porsi 7 kolom di layar besar) */}
+          {/* Kolom Kanan: Form Aspirasi */}
           <div className="lg:col-span-7">
             <div className="bg-white p-8 md:p-10 rounded-3xl border border-gray-100 shadow-xl relative">
-              {/* Dekorasi Form */}
               <div className="absolute top-0 right-0 w-32 h-32 bg-bajo-primary opacity-5 rounded-bl-full pointer-events-none"></div>
 
-              <h3 className="text-2xl font-bold text-bajo-dark mb-8">Formulir Aspirasi Online</h3>
+              <h3 className="text-2xl font-bold text-bajo-dark mb-6">Formulir Aspirasi Online</h3>
               
-              <form className="space-y-6 relative z-10">
-                {/* Opsi Identitas */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Nama Lengkap</label>
-                    <input 
-                      type="text" 
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-bajo-primary focus:border-bajo-primary outline-none transition-colors"
-                      placeholder="Masukkan nama Anda"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Nomor Induk Kependudukan (NIK)</label>
-                    <input 
-                      type="text" 
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-bajo-primary focus:border-bajo-primary outline-none transition-colors"
-                      placeholder="Opsional, untuk verifikasi"
-                    />
-                  </div>
+              {/* Notifikasi Pop-up */}
+              {notif.message && (
+                <div className={`mb-6 p-4 rounded-xl font-bold text-sm ${notif.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                  {notif.message}
                 </div>
+              )}
 
-                {/* Checkbox Anonim */}
+              <form onSubmit={handleSubmit} className="space-y-6 relative z-10">
+                
+                {/* Checkbox Anonim (Dipindah ke atas agar logika input nama terlihat jelas) */}
                 <div className="flex items-center gap-3 bg-gray-50 p-4 rounded-xl border border-gray-100">
                   <input 
                     type="checkbox" 
-                    id="anonim"
+                    id="is_anonim"
+                    name="is_anonim"
+                    checked={formData.is_anonim}
+                    onChange={handleInputChange}
                     className="w-5 h-5 text-bajo-primary border-gray-300 rounded focus:ring-bajo-primary"
                   />
-                  <label htmlFor="anonim" className="text-sm text-gray-700 font-medium cursor-pointer select-none">
-                    Sembunyikan identitas saya (Kirim sebagai <span className="font-bold">Anonim</span>)
+                  <label htmlFor="is_anonim" className="text-sm text-gray-700 font-bold cursor-pointer select-none">
+                    Kirim pesan ini sebagai Anonim (Identitas Dirahasiakan)
                   </label>
                 </div>
 
+                {/* Input Identitas (Hanya muncul jika TIDAK anonim) */}
+                {!formData.is_anonim && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-fadeIn">
+                    <div>
+                      <label className="block text-sm font-bold text-gray-700 mb-2">Nama Lengkap</label>
+                      <input 
+                        type="text" 
+                        name="nama"
+                        value={formData.nama}
+                        onChange={handleInputChange}
+                        required={!formData.is_anonim}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-bajo-primary focus:border-bajo-primary outline-none transition-colors"
+                        placeholder="Masukkan nama Anda"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-bold text-gray-700 mb-2">Nomor Induk Kependudukan (NIK)</label>
+                      <input 
+                        type="text" 
+                        name="nik"
+                        value={formData.nik}
+                        onChange={handleInputChange}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-bajo-primary focus:border-bajo-primary outline-none transition-colors"
+                        placeholder="Opsional, untuk verifikasi"
+                      />
+                    </div>
+                  </div>
+                )}
+
                 {/* Kategori Aspirasi */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Kategori Aspirasi / Laporan</label>
-                  <select className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-bajo-primary focus:border-bajo-primary outline-none transition-colors bg-white">
-                    <option defaultValue="#" disabled>-- Pilih Kategori --</option>
-                    <option value="infrastruktur">Infrastruktur & Pembangunan</option>
-                    <option value="pelayanan">Pelayanan Publik (Surat/Adminduk)</option>
-                    <option value="kebersihan">Kebersihan & Lingkungan</option>
-                    <option value="sosial">Bantuan Sosial & Kesehatan</option>
-                    <option value="lainnya">Lainnya</option>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">Kategori Aspirasi / Laporan</label>
+                  <select 
+                    name="kategori"
+                    value={formData.kategori}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-bajo-primary focus:border-bajo-primary outline-none transition-colors bg-white font-medium"
+                  >
+                    <option value="Infrastruktur & Pembangunan">Infrastruktur & Pembangunan</option>
+                    <option value="Pelayanan Publik">Pelayanan Publik (Surat/Adminduk)</option>
+                    <option value="Kebersihan & Lingkungan">Kebersihan & Lingkungan</option>
+                    <option value="Bantuan Sosial & Kesehatan">Bantuan Sosial & Kesehatan</option>
+                    <option value="Lainnya">Lainnya</option>
                   </select>
                 </div>
 
                 {/* Isi Aspirasi */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Isi Pesan / Aspirasi</label>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">Isi Pesan / Aspirasi</label>
                   <textarea 
+                    name="pesan"
+                    value={formData.pesan}
+                    onChange={handleInputChange}
+                    required
                     rows={5}
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-bajo-primary focus:border-bajo-primary outline-none transition-colors resize-none"
                     placeholder="Ceritakan dengan jelas keluhan, saran, atau aspirasi Anda di sini..."
                   ></textarea>
                 </div>
 
-                {/* Lampiran Foto (Opsional) */}
+                {/* Lampiran Foto dengan Pratinjau */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Lampiran Foto Bukti (Opsional)</label>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">Lampiran Foto Bukti (Opsional)</label>
                   <div className="flex items-center justify-center w-full">
-                    <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-xl cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors">
-                      <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                        <svg className="w-8 h-8 mb-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
-                        </svg>
-                        <p className="mb-2 text-sm text-gray-500"><span className="font-semibold">Klik untuk unggah</span> atau seret foto ke sini</p>
-                        <p className="text-xs text-gray-500">PNG, JPG, JPEG (Maks. 2MB)</p>
+                    {previewUrl ? (
+                      <div className="relative w-full h-48 rounded-xl overflow-hidden shadow-sm border-2 border-gray-200">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={previewUrl} alt="Preview Bukti" className="w-full h-full object-cover" />
+                        <button 
+                          type="button"
+                          onClick={() => { setImageFile(null); setPreviewUrl(""); }}
+                          className="absolute inset-0 bg-black/50 text-white font-bold flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity"
+                        >
+                          Hapus & Ganti Foto
+                        </button>
                       </div>
-                      <input type="file" className="hidden" accept="image/*" />
-                    </label>
+                    ) : (
+                      <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-xl cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors">
+                        <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                          <svg className="w-8 h-8 mb-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                          </svg>
+                          <p className="mb-1 text-sm text-gray-500"><span className="font-semibold">Klik untuk memilih foto</span> dari perangkat</p>
+                          <p className="text-xs text-gray-400">Format: PNG, JPG (Maks. 2MB)</p>
+                        </div>
+                        <input type="file" className="hidden" accept="image/png, image/jpeg, image/jpg" onChange={handleImageSelect} />
+                      </label>
+                    )}
                   </div>
                 </div>
 
                 <button 
-                  type="button" // Tetap type button untuk tampilan statis saat ini
-                  className="w-full bg-bajo-dark hover:bg-bajo-primary text-white font-bold py-4 px-4 rounded-xl transition-all duration-300 flex justify-center items-center gap-2 shadow-md"
+                  type="submit" 
+                  disabled={isSubmitting}
+                  className={`w-full text-white font-bold py-4 px-4 rounded-xl transition-all duration-300 flex justify-center items-center gap-2 shadow-md ${isSubmitting ? 'bg-gray-400 cursor-not-allowed' : 'bg-bajo-dark hover:bg-bajo-primary hover:-translate-y-1'}`}
                 >
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-                  </svg>
-                  Kirim Aspirasi Sekarang
+                  {isSubmitting ? "Mengirim Laporan..." : "Kirim Aspirasi Sekarang"}
+                  {!isSubmitting && (
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                    </svg>
+                  )}
                 </button>
               </form>
             </div>

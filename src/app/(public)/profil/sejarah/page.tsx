@@ -1,32 +1,51 @@
+import { supabase } from "@/lib/supabase";
+
 export const metadata = {
   title: "Sejarah - Desa Bajo Bahari",
   description: "Menelusuri jejak langkah dan sejarah terbentuknya Desa Bajo Bahari.",
 };
 
-export default function SejarahPage() {
-  // Data statis sejarah (Bisa disesuaikan dengan sejarah asli desa nantinya)
-  const sejarahTimeline = [
-    {
-      year: "Awal Mula",
-      title: "Terbentuknya Pemukiman Pesisir",
-      description: "Sekelompok nelayan tangguh mulai mendirikan pemukiman di sepanjang pesisir. Kedekatan dengan laut menjadikan wilayah ini sebagai titik strategis persinggahan perahu nelayan dari berbagai daerah.",
-    },
-    {
-      year: "2005",
-      title: "Peresmian Menjadi Dusun",
-      description: "Seiring bertambahnya populasi dan semakin pesatnya interaksi sosial ekonomi, pemukiman pesisir ini secara resmi diakui sebagai dusun definitif yang menginduk pada desa tetangga.",
-    },
-    {
-      year: "2012",
-      title: "Pemekaran Menjadi Desa Bajo Bahari",
-      description: "Karena potensi maritim yang besar dan kebutuhan administrasi mandiri, wilayah ini resmi mekar menjadi 'Desa Bajo Bahari'. Pemilihan nama ini merepresentasikan kedekatan masyarakat dengan lautan sebagai sumber kehidupan.",
-    },
-    {
-      year: "Saat Ini",
-      title: "Era Digital dan Pariwisata",
-      description: "Desa Bajo Bahari kini bertransformasi menjadi desa yang modern dengan tata kelola digital. Fokus pembangunan diarahkan pada transparansi, peningkatan UMKM warga, dan pelestarian ekosistem pariwisata pesisir.",
-    },
-  ];
+// Memaksa Next.js mengambil data terbaru setiap kali halaman dimuat
+export const dynamic = 'force-dynamic';
+
+interface TimelineItem {
+  year: string;
+  title: string;
+  description: string;
+}
+
+export default async function SejarahPage() {
+  // 1. TARIK DATA DARI DATABASE (Server-Side)
+  const { data } = await supabase
+    .from("profil_desa")
+    .select("sejarah, sejarah_timeline")
+    .limit(1)
+    .single();
+
+  // 2. OLAH DATA TIMELINE (Parsing JSON)
+  let sejarahTimeline: TimelineItem[] = [];
+  
+  if (data?.sejarah_timeline) {
+    try {
+      sejarahTimeline = JSON.parse(data.sejarah_timeline);
+    } catch (e) {
+      sejarahTimeline = [];
+    }
+  }
+
+  // Fallback jika admin belum mengisi data timeline
+  if (sejarahTimeline.length === 0) {
+    sejarahTimeline = [
+      {
+        year: "Saat Ini",
+        title: "Data Belum Tersedia",
+        description: "Sejarah timeline desa sedang dalam tahap penyusunan oleh Pemerintah Desa.",
+      }
+    ];
+  }
+
+  // Teks sejarah singkat (digunakan sebagai paragraf penutup/pengantar)
+  const sejarahPengantar = data?.sejarah || "Semangat gotong royong dan kecintaan pada alam bahari yang diwariskan para pendahulu, akan selalu menjadi pedoman kami dalam melangkah menuju masa depan yang lebih cerah.";
 
   return (
     <div className="bg-white min-h-screen">
@@ -39,6 +58,9 @@ export default function SejarahPage() {
         </div>
 
         <div className="relative z-10 px-4">
+          <div className="inline-block px-4 py-1 rounded-full bg-bajo-light/20 text-bajo-light font-bold uppercase tracking-widest text-xs mb-4 border border-bajo-light/30">
+            Profil Desa
+          </div>
           <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight">Sejarah Desa</h1>
           <p className="mt-4 text-lg text-bajo-light max-w-2xl mx-auto">
             Mengenal lebih dekat asal-usul, jejak langkah, dan perkembangan Desa Bajo Bahari dari masa ke masa.
@@ -90,10 +112,10 @@ export default function SejarahPage() {
 
         </div>
         
-        {/* Paragraf Penutup */}
+        {/* Paragraf Penutup (Mengambil dari field 'sejarah' di database) */}
         <div className="mt-20 text-center bg-bajo-light/20 p-8 rounded-3xl border border-bajo-light/50">
-          <p className="text-gray-700 leading-relaxed max-w-2xl mx-auto italic">
-            &quot;Semangat gotong royong dan kecintaan pada alam bahari yang diwariskan para pendahulu, akan selalu menjadi pedoman kami dalam melangkah menuju masa depan yang lebih cerah.&quot;
+          <p className="text-gray-700 leading-relaxed max-w-2xl mx-auto font-medium">
+            {sejarahPengantar}
           </p>
         </div>
 

@@ -1,70 +1,47 @@
+import { supabase } from "@/lib/supabase";
+
 export const metadata = {
   title: "Fasilitas Publik - Desa Bajo Bahari",
   description: "Daftar fasilitas publik dan infrastruktur yang tersedia di Desa Bajo Bahari.",
 };
 
-export default function FasilitasPage() {
-  // Data statis fasilitas desa dengan penyesuaian warna yang aman (Tailwind standar + Custom)
-  const fasilitasPublik = [
-    {
-      id: 1,
-      nama: "Balai Pertemuan Desa",
-      kategori: "Pemerintahan",
-      deskripsi: "Pusat kegiatan warga, musyawarah desa, dan acara seremonial. Dilengkapi dengan sound system dan ruang rapat.",
-      icon: "🏛️",
-      warnaBg: "bg-blue-100",
-      warnaTeks: "text-blue-600",
-    },
-    {
-      id: 2,
-      nama: "Poskesdes & Polindes",
-      kategori: "Kesehatan",
-      deskripsi: "Fasilitas kesehatan tingkat pertama untuk pelayanan ibu, anak, dan pertolongan pertama bagi warga desa.",
-      icon: "🏥",
-      warnaBg: "bg-green-100",
-      warnaTeks: "text-green-600",
-    },
-    {
-      id: 3,
-      nama: "Masjid Raya Desa",
-      kategori: "Tempat Ibadah",
-      deskripsi: "Pusat ibadah dan kegiatan keagamaan masyarakat. Mampu menampung hingga 300 jamaah dengan tempat wudhu bersih.",
-      icon: "🕌",
-      warnaBg: "bg-indigo-100",
-      warnaTeks: "text-indigo-600",
-    },
-    {
-      id: 4,
-      nama: "Dermaga Pesisir",
-      kategori: "Transportasi Laut",
-      deskripsi: "Tempat bersandar perahu nelayan dan bongkar muat hasil tangkapan laut warga Desa Bajo Bahari.",
-      icon: "⚓",
-      warnaBg: "bg-cyan-100",
-      warnaTeks: "text-cyan-600",
-    },
-    {
-      id: 5,
-      nama: "Lapangan Olahraga",
-      kategori: "Sosial & Olahraga",
-      deskripsi: "Area terbuka untuk kegiatan olahraga seperti voli dan takraw, serta digunakan untuk perayaan lomba.",
-      icon: "⚽",
-      warnaBg: "bg-orange-100",
-      warnaTeks: "text-orange-600",
-    },
-    {
-      id: 6,
-      nama: "Pasar Desa / TPI Mini",
-      kategori: "Ekonomi",
-      deskripsi: "Tempat transaksi jual beli kebutuhan pokok dan pusat pelelangan ikan skala kecil hasil tangkapan lokal.",
-      icon: "🏪",
-      warnaBg: "bg-teal-100",
-      warnaTeks: "text-teal-600",
-    },
-  ];
+// Memaksa Next.js untuk selalu mengambil data paling segar dari database
+export const dynamic = "force-dynamic";
+
+interface FasilitasDB {
+  id: number;
+  nama: string;
+  kategori: string;
+  deskripsi: string;
+  icon: string;
+  warna_bg: string;
+  warna_teks: string;
+}
+
+export default async function FasilitasPage() {
+  // 1. AMBIL DATA FASILITAS PUBLIK DARI DATABASE
+  const { data: fasilitasData } = await supabase
+    .from("fasilitas_publik")
+    .select("id, nama, kategori, deskripsi, icon, warna_bg, warna_teks")
+    .order("id", { ascending: true });
+
+  // 2. AMBIL DATA NOMOR WHATSAPP DARI KONTAK DESA
+  const { data: kontakData } = await supabase
+    .from("kontak_desa")
+    .select("no_whatsapp")
+    .limit(1)
+    .single();
+
+  const noWhatsApp = kontakData?.no_whatsapp || "6281234567890"; // Fallback nomor aman
+  const pesanPeminjaman = encodeURIComponent(
+    "Halo Admin Desa Bajo Bahari, saya ingin berkonsultasi mengenai prosedur dan persyaratan peminjaman fasilitas publik desa untuk kegiatan masyarakat."
+  );
+
+  const daftarFasilitas: FasilitasDB[] = fasilitasData || [];
 
   return (
     <div className="bg-gray-50 min-h-screen pb-20">
-      {/* Header Halaman - Dibuat lebih ringkas dan aman */}
+      {/* Header Halaman */}
       <div className="bg-bajo-dark py-16 text-center text-white px-4">
         <div className="inline-block px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-sm text-white font-semibold uppercase tracking-widest text-xs mb-4">
           Layanan Publik
@@ -77,33 +54,39 @@ export default function FasilitasPage() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 -mt-8 relative z-10">
         
-        {/* Grid Card yang Stabil */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {fasilitasPublik.map((item) => (
-            <div 
-              key={item.id} 
-              className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-300 flex flex-col h-full"
-            >
-              {/* Header Card: Ikon dan Kategori */}
-              <div className="flex justify-between items-start mb-6">
-                <div className={`w-14 h-14 rounded-xl flex items-center justify-center text-3xl ${item.warnaBg} ${item.warnaTeks}`}>
-                  {item.icon}
+        {/* Grid Card Dinamis */}
+        {daftarFasilitas.length === 0 ? (
+          <div className="bg-white rounded-2xl p-12 text-center border border-gray-200 shadow-sm text-gray-500 font-medium">
+            Data infrastruktur dan fasilitas publik belum ditambahkan.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fadeIn">
+            {daftarFasilitas.map((item) => (
+              <div 
+                key={item.id} 
+                className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-300 flex flex-col h-full"
+              >
+                {/* Header Card: Ikon dan Kategori */}
+                <div className="flex justify-between items-start mb-6">
+                  <div className={`w-14 h-14 rounded-xl flex items-center justify-center text-3xl ${item.warna_bg || 'bg-blue-100'} ${item.warna_teks || 'text-blue-600'}`}>
+                    {item.icon || "🏛️"}
+                  </div>
+                  <span className="bg-gray-100 text-gray-600 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider">
+                    {item.kategori}
+                  </span>
                 </div>
-                <span className="bg-gray-100 text-gray-600 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider">
-                  {item.kategori}
-                </span>
+
+                {/* Isi Card */}
+                <h3 className="text-xl font-bold text-gray-900 mb-3">{item.nama}</h3>
+                <p className="text-gray-600 text-sm leading-relaxed flex-grow">
+                  {item.deskripsi}
+                </p>
               </div>
+            ))}
+          </div>
+        )}
 
-              {/* Isi Card */}
-              <h3 className="text-xl font-bold text-gray-900 mb-3">{item.nama}</h3>
-              <p className="text-gray-600 text-sm leading-relaxed flex-grow">
-                {item.deskripsi}
-              </p>
-            </div>
-          ))}
-        </div>
-
-        {/* Banner Peminjaman - Dibuat jadi bentuk Box rapi */}
+        {/* Banner Peminjaman Terintegrasi WhatsApp */}
         <div className="mt-12 bg-white border border-bajo-primary/20 rounded-2xl p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm">
           <div className="flex items-center gap-5">
             <div className="hidden md:flex w-16 h-16 bg-bajo-primary/10 rounded-full items-center justify-center flex-shrink-0">
@@ -118,9 +101,14 @@ export default function FasilitasPage() {
               </p>
             </div>
           </div>
-          <button className="w-full md:w-auto px-6 py-3 bg-bajo-primary hover:bg-bajo-dark text-white text-sm font-bold rounded-xl transition-colors whitespace-nowrap">
-            Hubungi Admin
-          </button>
+          <a 
+            href={`https://wa.me/${noWhatsApp}?text=${pesanPeminjaman}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full md:w-auto px-6 py-3 bg-bajo-primary hover:bg-bajo-dark text-white text-sm font-bold rounded-xl transition-colors text-center shadow-md shadow-bajo-primary/10 whitespace-nowrap"
+          >
+            Hubungi Admin via WA
+          </a>
         </div>
 
       </div>

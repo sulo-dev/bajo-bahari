@@ -1,11 +1,25 @@
 import Link from "next/link";
+import { supabase } from "@/lib/supabase";
 
 export const metadata = {
   title: "RPJMDes - Desa Bajo Bahari",
   description: "Rencana Pembangunan Jangka Menengah Desa (RPJMDes) Bajo Bahari.",
 };
 
-export default function RpjmdesPage() {
+// Memaksa pengambilan data terbaru dari server
+export const dynamic = "force-dynamic";
+
+export default async function RpjmdesPage() {
+  // 1. TARIK DATA DOKUMEN RPJMDES TERBARU DARI DATABASE
+  const { data: dokumen } = await supabase
+    .from("transparansi_dokumen")
+    .select("judul, tahun, file_url")
+    .eq("jenis", "RPJMDes")
+    .order("tahun", { ascending: false })
+    .limit(1)
+    .single();
+
+  // Data statis bidang pembangunan (Edukasi publik)
   const bidangPembangunan = [
     {
       id: 1,
@@ -88,29 +102,41 @@ export default function RpjmdesPage() {
           </div>
         </div>
 
-        {/* Section Download Dokumen */}
+        {/* Section Download Dokumen Dinamis */}
         <div className="bg-bajo-dark rounded-3xl p-8 md:p-12 flex flex-col md:flex-row items-center justify-between shadow-xl relative overflow-hidden">
           {/* Ornamen Latar Belakang */}
           <div className="absolute right-0 top-0 w-64 h-64 bg-bajo-primary blur-3xl opacity-30 rounded-full translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
           
           <div className="text-white mb-8 md:mb-0 md:pr-8 relative z-10 text-center md:text-left">
-            <h3 className="text-2xl font-bold mb-2">Unduh Dokumen Lengkap</h3>
+            <h3 className="text-2xl font-bold mb-2">
+              Unduh Dokumen Lengkap {dokumen ? `(${dokumen.tahun})` : ""}
+            </h3>
             <p className="text-bajo-light">
               Pelajari rincian matriks program kerja dan sasaran strategis Desa Bajo Bahari secara menyeluruh.
             </p>
           </div>
           
           <div className="relative z-10">
-            {/* Tombol Unduh (Link ini nanti bisa diarahkan ke file PDF asli di folder public) */}
-            <Link 
-              href="#" 
-              className="bg-white text-bajo-dark hover:bg-bajo-light px-8 py-4 rounded-xl font-bold flex items-center gap-3 transition-colors shadow-lg whitespace-nowrap"
-            >
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-              </svg>
-              Unduh RPJMDes (PDF)
-            </Link>
+            {dokumen && dokumen.file_url ? (
+              <a 
+                href={dokumen.file_url} 
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-white text-bajo-dark hover:bg-bajo-light px-8 py-4 rounded-xl font-bold flex items-center gap-3 transition-colors shadow-lg whitespace-nowrap"
+              >
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4-4m0 0l-4-4m4 4V4" />
+                </svg>
+                Unduh {dokumen.judul} (PDF)
+              </a>
+            ) : (
+              <button 
+                disabled
+                className="bg-gray-600 text-gray-400 cursor-not-allowed px-8 py-4 rounded-xl font-bold flex items-center gap-3 whitespace-nowrap"
+              >
+                Dokumen Belum Tersedia
+              </button>
+            )}
           </div>
         </div>
 

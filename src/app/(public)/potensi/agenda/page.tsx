@@ -1,56 +1,57 @@
+import { supabase } from "@/lib/supabase";
+
 export const metadata = {
   title: "Agenda Desa - Desa Bajo Bahari",
   description: "Jadwal kegiatan, rapat, dan agenda Pemerintahan Desa Bajo Bahari.",
 };
 
-export default function AgendaPage() {
-  // Data statis (dummy) untuk agenda desa
-  const daftarAgenda = [
-    {
-      id: 1,
-      judul: "Penyaluran Bantuan Bibit Rumput Laut",
-      tanggal: "20",
-      bulan: "JUN",
-      waktu: "08:00 WITA - Selesai",
-      lokasi: "Dermaga Pesisir Bajo Bahari",
-      deskripsi: "Penyaluran bantuan bibit rumput laut kepada kelompok tani nelayan. Harap membawa fotokopi KTP dan KK.",
-      status: "Akan Datang",
-      warnaStatus: "bg-blue-100 text-blue-700 border-blue-200",
-    },
-    {
-      id: 2,
-      judul: "Rapat Koordinasi BPD dan Pemerintah Desa",
-      tanggal: "17",
-      bulan: "JUN",
-      waktu: "13:00 WITA - 16:00 WITA",
-      lokasi: "Ruang Rapat Kantor Desa",
-      deskripsi: "Rapat terbuka membahas evaluasi program kerja semester pertama tahun 2026. Warga diizinkan hadir sebagai pemantau.",
-      status: "Hari Ini",
-      warnaStatus: "bg-green-100 text-green-700 border-green-200",
-    },
-    {
-      id: 3,
-      judul: "Kerja Bakti Bulanan Membersihkan Pantai",
-      tanggal: "10",
-      bulan: "JUN",
-      waktu: "07:00 WITA - Selesai",
-      lokasi: "Sepanjang Garis Pantai Desa",
-      deskripsi: "Kegiatan gotong royong seluruh warga untuk membersihkan sampah plastik. Disediakan konsumsi ringan oleh ibu-ibu PKK.",
-      status: "Selesai",
-      warnaStatus: "bg-gray-100 text-gray-600 border-gray-200",
-    },
-    {
-      id: 4,
-      judul: "Pelatihan Digital Marketing untuk UMKM",
-      tanggal: "05",
-      bulan: "JUN",
-      waktu: "09:00 WITA - 15:00 WITA",
-      lokasi: "Balai Pertemuan Desa",
-      deskripsi: "Pelatihan pemanfaatan media sosial untuk memperluas pasar produk ikan asin dan kerajinan laut warga.",
-      status: "Selesai",
-      warnaStatus: "bg-gray-100 text-gray-600 border-gray-200",
-    },
-  ];
+// Memaksa Next.js mengambil data terbaru setiap kali halaman dimuat oleh pengunjung
+export const dynamic = "force-dynamic";
+
+interface AgendaDB {
+  id: number;
+  judul: string;
+  tanggal: string; // Format asli YYYY-MM-DD dari database
+  waktu: string;
+  lokasi: string;
+  deskripsi: string;
+  status: string;
+  warna_status: string;
+}
+
+export default async function AgendaPage() {
+  // 1. AMBIL DATA JADWAL AGENDA DARI DATABASE SUPABASE
+  const { data: agendaData } = await supabase
+    .from("agenda_desa")
+    .select("id, judul, tanggal, waktu, lokasi, deskripsi, status, warna_status")
+    .order("tanggal", { ascending: true }); // Diurutkan kronologis dari tanggal terdekat
+
+  const rawAgenda: AgendaDB[] = agendaData || [];
+
+  // 2. PROSES EKSTRAKSI FORMAT TANGGAL DAN BULAN KALENDER Visual
+  const daftarAgenda = rawAgenda.map((item: AgendaDB) => {
+    const dateObj = new Date(item.tanggal);
+    
+    // Ambil angka hari (Contoh: "20" atau "05")
+    const hariAngka = dateObj.getDate().toString().padStart(2, "0");
+    
+    // Ambil singkatan nama bulan dalam format lokal Indonesia (Contoh: "JUN")
+    const bulanTeks = dateObj.toLocaleDateString("id-ID", { month: "short" }).toUpperCase();
+
+    return {
+      id: item.id,
+      judul: item.judul,
+      tanggal: hariAngka,
+      bulan: bulanTeks,
+      waktu: item.waktu,
+      lokasi: item.lokasi,
+      deskripsi: item.deskripsi,
+      status: item.status,
+      warnaStatus: item.warna_status,
+    };
+  });
+
+  const tahunAnggaran = new Date().getFullYear();
 
   return (
     <div className="bg-gray-50 min-h-screen pb-20">
@@ -74,7 +75,7 @@ export default function AgendaPage() {
         
         {/* Kotak Informasi / Filter Cepat */}
         <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4 mb-10">
-          <h2 className="text-lg font-bold text-gray-900">Daftar Kegiatan Tahun 2026</h2>
+          <h2 className="text-lg font-bold text-gray-900">Daftar Kegiatan Tahun {tahunAnggaran}</h2>
           <div className="flex gap-2">
             <span className="px-3 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-md">Hari Ini</span>
             <span className="px-3 py-1 bg-blue-100 text-blue-700 text-xs font-bold rounded-md">Akan Datang</span>
@@ -82,64 +83,70 @@ export default function AgendaPage() {
           </div>
         </div>
 
-        {/* Daftar Agenda (Event List) */}
+        {/* Daftar Agenda (Event List) Dinamis */}
         <div className="space-y-6">
-          {daftarAgenda.map((agenda) => (
-            <div 
-              key={agenda.id} 
-              className="bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden flex flex-col sm:flex-row"
-            >
-              {/* Sisi Kiri: Tanggal (Kotak Kalender) */}
-              <div className="bg-bajo-primary/5 sm:w-40 flex-shrink-0 flex flex-row sm:flex-col items-center justify-center p-6 border-b sm:border-b-0 sm:border-r border-gray-100">
-                <span className="text-sm font-bold text-bajo-primary uppercase tracking-widest sm:mb-1 mr-3 sm:mr-0">
-                  {agenda.bulan}
-                </span>
-                <span className="text-4xl sm:text-5xl font-extrabold text-bajo-dark">
-                  {agenda.tanggal}
-                </span>
-              </div>
-
-              {/* Sisi Kanan: Detail Agenda */}
-              <div className="p-6 sm:p-8 flex-grow">
-                <div className="flex justify-between items-start mb-3">
-                  <h3 className="text-xl md:text-2xl font-bold text-gray-900 leading-tight pr-4">
-                    {agenda.judul}
-                  </h3>
-                  {/* Badge Status */}
-                  <span className={`px-3 py-1 border rounded-full text-xs font-bold whitespace-nowrap ${agenda.warnaStatus}`}>
-                    {agenda.status}
+          {daftarAgenda.length === 0 ? (
+            <div className="bg-white rounded-2xl p-10 border border-gray-200 text-center text-gray-500 font-medium shadow-sm">
+              Belum ada agenda kegiatan yang dijadwalkan dalam waktu dekat.
+            </div>
+          ) : (
+            daftarAgenda.map((agenda) => (
+              <div 
+                key={agenda.id} 
+                className="bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden flex flex-col sm:flex-row animate-fadeIn"
+              >
+                {/* Sisi Kiri: Tanggal (Kotak Kalender Otomatis) */}
+                <div className="bg-bajo-primary/5 sm:w-40 flex-shrink-0 flex flex-row sm:flex-col items-center justify-center p-6 border-b sm:border-b-0 sm:border-r border-gray-100">
+                  <span className="text-sm font-bold text-bajo-primary uppercase tracking-widest sm:mb-1 mr-3 sm:mr-0">
+                    {agenda.bulan}
+                  </span>
+                  <span className="text-4xl sm:text-5xl font-extrabold text-bajo-dark">
+                    {agenda.tanggal}
                   </span>
                 </div>
 
-                {/* Info Waktu & Lokasi */}
-                <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6 mb-4 text-sm font-medium text-gray-600">
-                  <div className="flex items-center gap-2">
-                    <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    {agenda.waktu}
+                {/* Sisi Rangan: Detail Agenda */}
+                <div className="p-6 sm:p-8 flex-grow">
+                  <div className="flex justify-between items-start mb-3">
+                    <h3 className="text-xl md:text-2xl font-bold text-gray-900 leading-tight pr-4">
+                      {agenda.judul}
+                    </h3>
+                    {/* Badge Status Dinamis dari Database */}
+                    <span className={`px-3 py-1 border rounded-full text-xs font-bold whitespace-nowrap ${agenda.warnaStatus || 'bg-blue-100 text-blue-700 border-blue-200'}`}>
+                      {agenda.status}
+                    </span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                    {agenda.lokasi}
-                  </div>
-                </div>
 
-                {/* Deskripsi */}
-                <p className="text-gray-600 text-sm leading-relaxed">
-                  {agenda.deskripsi}
-                </p>
+                  {/* Info Waktu & Lokasi */}
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6 mb-4 text-sm font-medium text-gray-600">
+                    <div className="flex items-center gap-2">
+                      <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      {agenda.waktu}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                      {agenda.lokasi}
+                    </div>
+                  </div>
+
+                  {/* Deskripsi */}
+                  <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-line">
+                    {agenda.deskripsi}
+                  </p>
+                </div>
               </div>
-            </div>
-          ))}
+            ))
+          )}
         </div>
 
-        {/* Tombol Load More */}
+        {/* Tombol Riwayat */}
         <div className="mt-10 text-center">
-          <button className="px-6 py-2.5 bg-white border border-gray-300 text-gray-600 font-bold text-sm rounded-xl hover:border-bajo-primary hover:text-bajo-primary transition-colors">
+          <button className="px-6 py-2.5 bg-white border border-gray-300 text-gray-600 font-bold text-sm rounded-xl hover:border-bajo-primary hover:text-bajo-primary shadow-sm transition-colors">
             Lihat Agenda Bulan Sebelumnya
           </button>
         </div>
