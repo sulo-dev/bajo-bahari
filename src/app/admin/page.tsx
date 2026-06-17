@@ -9,6 +9,7 @@ export default function AdminLogin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isCheckingSession, setIsCheckingSession] = useState(true); // State baru untuk cek sesi
   const [errorMsg, setErrorMsg] = useState("");
   const router = useRouter();
 
@@ -18,6 +19,9 @@ export default function AdminLogin() {
       const { data } = await supabase.auth.getSession();
       if (data.session) {
         router.push("/admin/dashboard");
+      } else {
+        // Jika tidak ada sesi aktif, hentikan loading pengecekan dan tampilkan form login
+        setIsCheckingSession(false);
       }
     };
     checkSession();
@@ -47,6 +51,19 @@ export default function AdminLogin() {
     }
   };
 
+  // JIKA SISTEM MASIH MEMERIKSA SESI, TAMPILKAN LAYAR LOADING (Mencegah Layar Berkedip)
+  if (isCheckingSession) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-8 h-8 border-4 border-bajo-primary/30 border-t-bajo-primary rounded-full animate-spin"></div>
+          <p className="text-sm font-medium text-gray-500">Memeriksa akses keamanan...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // JIKA TIDAK ADA SESI AKTIF, TAMPILKAN FORM LOGIN SEPERTI BIASA
   return (
     <div className="min-h-[calc(100vh-5rem)] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden bg-gray-50">
       {/* Background Ornamen yang lebih soft */}
@@ -55,7 +72,7 @@ export default function AdminLogin() {
         <div className="absolute bottom-0 right-0 w-64 h-64 rounded-full bg-bajo-secondary blur-3xl"></div>
       </div>
 
-      <div className="max-w-md w-full bg-white p-8 rounded-3xl shadow-2xl border border-gray-100 relative z-10">
+      <div className="max-w-md w-full bg-white p-8 rounded-3xl shadow-2xl border border-gray-100 relative z-10 animate-fade-in-up">
         <div className="text-center mb-8">
           <div className="w-16 h-16 bg-bajo-primary/10 text-bajo-primary rounded-2xl flex items-center justify-center mx-auto mb-4">
             <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -67,7 +84,7 @@ export default function AdminLogin() {
         </div>
 
         {errorMsg && (
-          <div className="mb-6 p-4 bg-red-50 text-red-700 text-sm rounded-xl border border-red-100 font-medium">
+          <div className="mb-6 p-4 bg-red-50 text-red-700 text-sm rounded-xl border border-red-100 font-medium animate-pulse">
             {errorMsg}
           </div>
         )}
@@ -78,7 +95,7 @@ export default function AdminLogin() {
             <input
               type="email"
               required
-              className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-bajo-primary/50 focus:border-bajo-primary transition-all"
+              className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-bajo-primary/50 focus:border-bajo-primary transition-all text-gray-900"
               placeholder="admin@bajobahari.desa.id"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -90,7 +107,7 @@ export default function AdminLogin() {
             <input
               type="password"
               required
-              className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-bajo-primary/50 focus:border-bajo-primary transition-all"
+              className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-bajo-primary/50 focus:border-bajo-primary transition-all text-gray-900"
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}

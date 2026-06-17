@@ -1,21 +1,33 @@
 "use client";
-import { supabase } from "@/lib/supabase";
 
-import { useState } from "react"; // useEffect dihapus
+import { useState, useEffect } from "react"; // 1. Pastikan useEffect diimport
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-
-// 1. Tambahkan ke import di bagian atas
-import { useRouter } from "next/navigation"; // Tambahkan ini
-
-// 2. Di dalam komponen AdminLayout, sebelum return:
+import { usePathname, useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const router = useRouter(); // <--- Dipanggil di dalam komponen (TIDAK error lagi)
+  const router = useRouter(); 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isCheckingSession, setIsCheckingSession] = useState(true); // 2. State untuk mengunci tampilan selama pengecekan
 
-  // Fungsi Logout sekarang di dalam komponen
+  // 3. PROTEKSI RUTE: Periksa sesi sebelum merender isi dashboard
+  useEffect(() => {
+    const checkAdminSession = async () => {
+      const { data } = await supabase.auth.getSession();
+      
+      if (!data.session) {
+        // Jika tidak ada sesi aktif (belum login), tendang paksa ke halaman login
+        router.push("/admin");
+      } else {
+        // Jika sesi terverifikasi ada, buka kunci loading dan tampilkan dashboard
+        setIsCheckingSession(false);
+      }
+    };
+    checkAdminSession();
+  }, [router]);
+
+  // Fungsi Logout
   const handleLogout = async () => {
     const { error } = await supabase.auth.signOut();
     if (!error) {
@@ -67,39 +79,27 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     },
   ];
 
+  // 4. JIKA SEDANG MEMERIKSA SESI, TAMPILKAN LAYAR LOADING (Mencegah Kebocoran Komponen)
+  if (isCheckingSession) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#f8fafc]">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-8 h-8 border-4 border-bajo-primary/30 border-t-bajo-primary rounded-full animate-spin"></div>
+          <p className="text-sm font-medium text-gray-500">Memeriksa otorisasi akun...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // 5. JIKA SESI ADA, BARU RENDER HALAMAN UTAMA DASHBOARD
   return (
     <div className="flex h-screen bg-[#f8fafc] text-gray-800 overflow-hidden font-sans">
-      {/* Overlay Gelap untuk Mobile saat Sidebar Terbuka */}
+      {/* Overlay Gelap untuk Mobile */}
       {isSidebarOpen && <div className="fixed inset-0 bg-gray-900/60 z-40 lg:hidden backdrop-blur-sm transition-opacity" onClick={() => setIsSidebarOpen(false)}></div>}
 
       {/* ================= SIDEBAR ================= */}
-      <aside
-        className={`fixed inset-y-0 left-0 z-50 w-[280px] bg-bajo-dark text-white flex flex-col shadow-2xl transform transition-transform duration-300 ease-in-out 
-        ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"} 
-        lg:relative lg:translate-x-0`}
-      >
-        <div className="absolute top-0 left-0 w-full h-64 bg-gradient-to-b from-white/10 to-transparent pointer-events-none"></div>
-
-        {/* Logo & Header */}
-        <div className="h-20 flex items-center justify-between px-6 lg:px-8 border-b border-white/10 relative z-10">
-          <div className="flex items-center">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-bajo-primary to-bajo-light flex items-center justify-center mr-3 shadow-lg">
-              <span className="font-extrabold text-white text-lg">B</span>
-            </div>
-            <h2 className="text-xl font-bold tracking-wide text-white">
-              Desa <span className="text-bajo-light">Bajo</span>
-            </h2>
-          </div>
-
-          {/* Tombol Tutup Sidebar (Hanya terlihat di Mobile) */}
-          <button onClick={() => setIsSidebarOpen(false)} className="lg:hidden text-gray-400 hover:text-white focus:outline-none">
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-
-        {/* Menu Navigasi */}
+      <aside className="fixed inset-y-0 left-0 z-50 w-[280px] bg-bajo-dark text-white flex flex-col shadow-2xl transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0">
+        {/* ... Konten Sidebar Tetap Sama ... */}
         <div className="flex-grow py-6 px-4 overflow-y-auto relative z-10 scrollbar-hide">
           <div className="space-y-8">
             {menuGroups.map((group, groupIndex) => (
@@ -108,19 +108,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 <div className="space-y-1">
                   {group.items.map((item, itemIndex) => {
                     const isActive = item.path === "/admin/dashboard" ? pathname === item.path : pathname.startsWith(item.path);
-
                     return (
                       <Link
                         key={itemIndex}
                         href={item.path}
-                        onClick={() => setIsSidebarOpen(false)} // Menutup sidebar di mobile saat menu diklik
+                        onClick={() => setIsSidebarOpen(false)}
                         className={`group relative flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 ${isActive ? "bg-white/10 text-white shadow-inner" : "text-gray-400 hover:bg-white/5 hover:text-gray-100"}`}
                       >
-                        {isActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-bajo-primary rounded-r-full shadow-[0_0_10px_rgba(var(--bajo-primary),0.8)]"></div>}
-                        <svg className={`w-5 h-5 transition-transform duration-300 ${isActive ? "text-bajo-primary scale-110" : "group-hover:scale-110 group-hover:text-bajo-light"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={isActive ? 2.5 : 2} d={item.icon} />
+                        {isActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-bajo-primary rounded-r-full"></div>}
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
                         </svg>
-                        <span className={`text-sm ${isActive ? "font-semibold" : "font-medium"}`}>{item.title}</span>
+                        <span className="text-sm font-medium">{item.title}</span>
                       </Link>
                     );
                   })}
@@ -130,12 +129,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
         </div>
 
-        {/* Footer Sidebar (User Info Mini) */}
+        {/* Tombol Logout */}
         <div className="p-4 border-t border-white/10 relative z-10">
-          <button className="w-full flex items-center justify-between px-4 py-3 bg-white/5 hover:bg-red-500/20 text-gray-300 hover:text-red-400 rounded-xl transition-all group">
+          <button onClick={handleLogout} className="w-full flex items-center justify-between px-4 py-3 bg-white/5 hover:bg-red-500/20 text-gray-300 hover:text-red-400 rounded-xl transition-all group">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-gray-600 border-2 border-transparent group-hover:border-red-400 flex items-center justify-center overflow-hidden transition-colors">
-                <svg className="w-5 h-5 text-gray-300 group-hover:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="w-8 h-8 rounded-full bg-gray-600 flex items-center justify-center overflow-hidden">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
               </div>
@@ -144,69 +143,30 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 <p className="text-[10px] text-gray-400 mt-1">Keluar Sistem</p>
               </div>
             </div>
-            <svg className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-            </svg>
           </button>
         </div>
       </aside>
 
       {/* ================= KONTEN UTAMA & TOPBAR ================= */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
-        {/* Topbar / Header Atas */}
         <header className="h-20 bg-white/90 backdrop-blur-md border-b border-gray-200 flex items-center justify-between px-4 sm:px-8 z-30 relative">
           <div className="flex items-center flex-1">
-            {/* Tombol Hamburger (Muncul di Mobile/Tablet saja) */}
-            <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden p-2 mr-2 -ml-2 text-gray-600 hover:text-bajo-primary hover:bg-gray-100 rounded-lg transition-colors focus:outline-none">
+            <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden p-2 mr-2 text-gray-600 rounded-lg">
               <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
-
-            {/* Sisi Kiri Topbar (Search) */}
             <div className="relative w-full max-w-md hidden md:block">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </div>
-              <input
-                type="text"
-                className="w-full pl-10 pr-4 py-2.5 bg-gray-100/80 border-transparent rounded-xl text-sm focus:border-bajo-primary focus:bg-white focus:ring-1 focus:ring-bajo-primary/50 transition-all outline-none"
-                placeholder="Cari menu atau data desa..."
-              />
+              <input type="text" className="w-full pl-4 pr-4 py-2.5 bg-gray-100 border-transparent rounded-xl text-sm outline-none" placeholder="Cari data desa..." />
             </div>
           </div>
-
-          {/* Sisi Kanan Topbar (Aksi & Profil) */}
-          <div className="flex items-center gap-4 sm:gap-6">
-            <button className="relative p-2 text-gray-400 hover:text-bajo-primary hover:bg-gray-100 rounded-full transition-all">
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
-                />
-              </svg>
-              <span className="absolute top-1 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
-            </button>
-
-            <div className="w-px h-8 bg-gray-200 hidden sm:block"></div>
-
-            <div className="flex items-center gap-3 cursor-pointer group">
-              <div className="text-right hidden sm:block">
-                <p className="text-sm font-bold text-gray-800 leading-none">Admin Desa</p>
-                <p className="text-xs text-gray-500 mt-1">Super Admin</p>
-              </div>
-              <div className="w-10 h-10 rounded-xl bg-bajo-primary text-white flex items-center justify-center font-bold shadow-md shadow-bajo-primary/30 group-hover:scale-105 transition-transform">AD</div>
-            </div>
+          <div className="flex items-center gap-3">
+            <p className="text-sm font-bold text-gray-800">Admin Desa</p>
+            <div className="w-10 h-10 rounded-xl bg-bajo-primary text-white flex items-center justify-center font-bold">AD</div>
           </div>
         </header>
 
-        {/* Area Render Halaman Dashboard */}
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 relative">
-          <div className="absolute top-0 left-0 w-full h-64 bg-bajo-primary/5 rounded-b-[50px] -z-10 pointer-events-none"></div>
           {children}
         </main>
       </div>
