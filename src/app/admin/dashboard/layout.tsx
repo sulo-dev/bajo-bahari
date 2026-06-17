@@ -17,7 +17,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       const { data } = await supabase.auth.getSession();
       
       if (!data.session) {
-        router.push("/admin/login");
+        router.push("/admin");
       } else {
         setIsCheckingSession(false);
       }
